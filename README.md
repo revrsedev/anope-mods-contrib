@@ -16,6 +16,8 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see [http://www.gnu.org/licenses/](http://www.gnu.org/licenses/)
 
+# Motivation #
+Support enc_bcytp password's.
 # Configuration #
 Add this configuration block in your conf/modules.conf file
 ```
