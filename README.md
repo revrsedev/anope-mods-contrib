@@ -48,3 +48,4 @@ Add this configuration block in your conf/modules.conf file
          */
         disable_email_reason = "To change your e-mail address navigate to http://www.test.fr/change/"
     }
+# Thank's to m_sqlauthentication from Anope Team #
