@@ -20,6 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "module.h"
 #include "modules/sql.h"
 #include "modules/encryption.h" // Include Anope's encryption header
+#include "bcrypt/crypt_blowfish.c" // Include the bcrypt implementation
 
 static Module *me;
 
@@ -63,17 +64,33 @@ public:
         }
         catch (const SQL::Exception &) { }
 
-        ServiceReference<Encryption::Provider> bcrypt_provider("Encryption::Provider", "bcrypt");
-        if (!bcrypt_provider)
+        // Normalize bcrypt hash prefix
+        if (hash.find("bcrypt$$") == 0)
         {
-            Log(LOG_COMMAND) << "[sql_auth]: Bcrypt provider not found";
+            hash = "$" + hash.substr(8);
+        }
+
+        //Log(LOG_COMMAND) << "[sql_auth]: Normalized hash: " << hash;
+
+        // Use bcrypt functions directly
+        char hash_output[64];
+        if (!_crypt_blowfish_rn(currPass.c_str(), hash.c_str(), hash_output, sizeof(hash_output)))
+        {
+            Log(LOG_COMMAND) << "[sql_auth]: Bcrypt comparison failed";
             delete this;
             return;
         }
 
-        if (!bcrypt_provider->Compare(hash, currPass))
+        bool is_match = (hash == hash_output);
+        //Log(LOG_COMMAND) << "[sql_auth]: Password comparison result: " << is_match;
+
+        if (!is_match)
         {
             Log(LOG_COMMAND) << "[sql_auth]: ERROR: hash NOT EQUAL pass";
+            //Log(LOG_COMMAND) << "[sql_auth]: Provided password: " << currPass;
+            //Log(LOG_COMMAND) << "[sql_auth]: Retrieved hash: " << hash;
+            //Log(LOG_COMMAND) << "[sql_auth]: Manually hashed provided password: " << hash_output;
+
             Log(LOG_COMMAND) << "[sql_auth]: Unsuccessful authentication for " << req->GetAccount();
             delete this;
             return;
