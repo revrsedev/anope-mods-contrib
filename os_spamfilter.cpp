@@ -46,6 +46,8 @@ namespace
 
 	static bool LooksLikeGlob(const Anope::string& pattern)
 	{
+		// Be conservative: only auto-treat as glob when it contains glob tokens and
+		// doesn't contain obvious regex metacharacters.
 		if (pattern.find('*') == Anope::string::npos && pattern.find('?') == Anope::string::npos)
 			return false;
 
@@ -54,12 +56,16 @@ namespace
 
 	static Anope::string GlobToRegex(const Anope::string& glob)
 	{
+		// Convert a simple glob to an ECMA-style regex.
+		// NOTE: We intentionally do not add ^/$ anchors because InspIRCd's regex engines
+		// generally search within a string (and users often want substring matches).
 		Anope::string out;
 		bool escaping = false;
 		for (const auto ch : glob)
 		{
 			if (escaping)
 			{
+				// Force literal.
 				switch (ch)
 				{
 					case '.': case '\\': case '+': case '(': case ')': case '[': case ']':
@@ -95,6 +101,7 @@ namespace
 			}
 		}
 
+		// Trailing backslash: treat as a literal backslash.
 		if (escaping)
 			out += "\\\\";
 
@@ -115,6 +122,9 @@ namespace
 	static Anope::string EncodeFilterMetadataValue(const Anope::string& pattern, const Anope::string& action,
 		const Anope::string& flags, unsigned long duration_seconds, const Anope::string& reason)
 	{
+		// Matches InspIRCd m_filter.cpp EncodeFilter():
+		//   <pattern> <action> <flags> <duration> :<reason>
+		// With spaces in the pattern escaped to \x07.
 		Anope::string freeform = pattern;
 		for (auto& chr : freeform)
 		{
@@ -148,6 +158,8 @@ class CommandOSSpamfilter final
 
 	void LoadDefaults()
 	{
+		// Anope 2.1 config style: module settings live inside the module{} block.
+		// We also keep compatibility with an older top-level spamfilter{} block.
 		Configuration::Block legacy = Config->GetBlock("spamfilter");
 		method = legacy.Get<Anope::string>("method", "metadata");
 		default_action = legacy.Get<Anope::string>("default_action", "gline");
@@ -166,10 +178,15 @@ class CommandOSSpamfilter final
 
 	void SendFilter(CommandSource &source, const std::vector<Anope::string> &args)
 	{
+		// InspIRCd v4 m_filter does not allow remote servers to execute /FILTER via ENCAP
+		// because the command requires an oper user. Instead it accepts new filters via
+		// broadcast METADATA with key "filter".
 		if (method.equals_ci("metadata"))
 		{
 			if (args.size() == 1)
 			{
+				// There is no supported S2S delete in m_filter via metadata.
+				// The /FILTER delete form requires an oper user.
 				Uplink::SendInternal({}, Me, "FILTER", args);
 			}
 			else if (args.size() >= 4)
@@ -177,6 +194,10 @@ class CommandOSSpamfilter final
 				const Anope::string& pattern = args[0];
 				const Anope::string& action = args[1];
 				const Anope::string& flags = args[2];
+
+				Anope::string wire_pattern = pattern;
+				if (pattern_type.equals_ci("glob") || (pattern_type.equals_ci("auto") && LooksLikeGlob(pattern)))
+					wire_pattern = GlobToRegex(pattern);
 
 				unsigned long duration_seconds = 0;
 				Anope::string reason;
@@ -193,7 +214,7 @@ class CommandOSSpamfilter final
 				if (reason.empty())
 					reason = default_reason;
 
-				Anope::string encoded = EncodeFilterMetadataValue(pattern, action.lower(), flags, duration_seconds, reason);
+				Anope::string encoded = EncodeFilterMetadataValue(wire_pattern, action.lower(), flags, duration_seconds, reason);
 				Uplink::SendInternal({}, Me, "METADATA", { "*", "filter", encoded });
 			}
 			else
@@ -283,6 +304,7 @@ public:
 			Anope::string pattern = params[1];
 			if (pattern_type.equals_ci("glob") || (pattern_type.equals_ci("auto") && LooksLikeGlob(pattern)))
 				pattern = GlobToRegex(pattern);
+
 			Anope::string action = params.size() >= 3 ? params[2] : default_action;
 			Anope::string flags = params.size() >= 4 ? params[3] : default_flags;
 

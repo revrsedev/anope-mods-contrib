@@ -79,10 +79,8 @@ class CommandGSSexDice : public Command
 		}
 
 		std::vector<User* > users;
-		for (Channel::ChanUserList::iterator it = ci->c->users.begin(), it_end = ci->c->users.end(); it != it_end; ++it)
+		for (const auto& [u, uc] : ci->c->users)
 		{
-			ChanUserContainer* uc = it->second;
-			User* u = uc->user;
 			if(u != ci->bi) // Don't add the BotServ bot
 				users.push_back(u);
 		}

@@ -91,7 +91,7 @@ void HelpServTicketDataType::Serialize(Serializable* obj, Serialize::Data& data)
 Serializable* HelpServTicketDataType::Unserialize(Serializable* obj, Serialize::Data& data) const
 {
 	uint64_t id = 0;
-	data["id"] >> id;
+	data.TryLoad("id", id);
 	if (!id)
 		return nullptr;
 
@@ -112,28 +112,28 @@ Serializable* HelpServTicketDataType::Unserialize(Serializable* obj, Serialize::
 
 	t->id = id;
 	t->key = TicketKey(id);
-	data["account"] >> t->account;
-	data["nick"] >> t->nick;
-	data["requester"] >> t->requester;
-	data["topic"] >> t->topic;
-	data["message"] >> t->message;
-	data["priority"] >> t->priority;
+	data.TryLoad("account", t->account);
+	data.TryLoad("nick", t->nick);
+	data.TryLoad("requester", t->requester);
+	data.TryLoad("topic", t->topic);
+	data.TryLoad("message", t->message);
+	data.TryLoad("priority", t->priority);
 	t->priority = TicketClampPriority(t->priority);
-	data["state"] >> t->state;
+	data.TryLoad("state", t->state);
 	t->state = TicketNormalizeState(t->state);
-	data["wait_reason"] >> t->wait_reason;
-	data["assigned"] >> t->assigned;
-	data["created"] >> t->created;
-	data["updated"] >> t->updated;
+	data.TryLoad("wait_reason", t->wait_reason);
+	data.TryLoad("assigned", t->assigned);
+	data.TryLoad("created", t->created);
+	data.TryLoad("updated", t->updated);
 
 	uint64_t notecount = 0;
-	data["notecount"] >> notecount;
+	data.TryLoad("notecount", notecount);
 	t->notes.clear();
 	t->notes.resize(static_cast<size_t>(notecount));
 	for (uint64_t i = 0; i < notecount; ++i)
 	{
 		const Anope::string prefix = "note" + Anope::ToString(i) + ".";
-		data[prefix + "text"] >> t->notes[static_cast<size_t>(i)];
+		data.TryLoad(prefix + "text", t->notes[static_cast<size_t>(i)]);
 	}
 
 	return t;
@@ -204,7 +204,7 @@ void HelpServStateDataType::Serialize(Serializable* obj, Serialize::Data& data) 
 Serializable* HelpServStateDataType::Unserialize(Serializable* obj, Serialize::Data& data) const
 {
 	Anope::string name;
-	data["name"] >> name;
+	data.TryLoad("name", name);
 	if (name.empty())
 		name = "state";
 
@@ -223,66 +223,66 @@ Serializable* HelpServStateDataType::Unserialize(Serializable* obj, Serialize::D
 	}
 
 	st->name = name;
-	data["next_ticket_id"] >> st->next_ticket_id;
+	data.TryLoad("next_ticket_id", st->next_ticket_id);
 
-	data["help_requests"] >> st->help_requests;
-	data["search_requests"] >> st->search_requests;
-	data["search_hits"] >> st->search_hits;
-	data["search_misses"] >> st->search_misses;
-	data["unknown_topics"] >> st->unknown_topics;
-	data["helpme_requests"] >> st->helpme_requests;
-	data["request_requests"] >> st->request_requests;
-	data["cancel_requests"] >> st->cancel_requests;
-	data["list_requests"] >> st->list_requests;
-	data["next_requests"] >> st->next_requests;
-	data["view_requests"] >> st->view_requests;
-	data["take_requests"] >> st->take_requests;
-	data["assign_requests"] >> st->assign_requests;
-	data["note_requests"] >> st->note_requests;
-	data["close_requests"] >> st->close_requests;
-	data["priority_requests"] >> st->priority_requests;
-	data["wait_requests"] >> st->wait_requests;
-	data["unwait_requests"] >> st->unwait_requests;
-	data["notify_requests"] >> st->notify_requests;
+	data.TryLoad("help_requests", st->help_requests);
+	data.TryLoad("search_requests", st->search_requests);
+	data.TryLoad("search_hits", st->search_hits);
+	data.TryLoad("search_misses", st->search_misses);
+	data.TryLoad("unknown_topics", st->unknown_topics);
+	data.TryLoad("helpme_requests", st->helpme_requests);
+	data.TryLoad("request_requests", st->request_requests);
+	data.TryLoad("cancel_requests", st->cancel_requests);
+	data.TryLoad("list_requests", st->list_requests);
+	data.TryLoad("next_requests", st->next_requests);
+	data.TryLoad("view_requests", st->view_requests);
+	data.TryLoad("take_requests", st->take_requests);
+	data.TryLoad("assign_requests", st->assign_requests);
+	data.TryLoad("note_requests", st->note_requests);
+	data.TryLoad("close_requests", st->close_requests);
+	data.TryLoad("priority_requests", st->priority_requests);
+	data.TryLoad("wait_requests", st->wait_requests);
+	data.TryLoad("unwait_requests", st->unwait_requests);
+	data.TryLoad("notify_requests", st->notify_requests);
 
 	uint64_t topiccount = 0;
-	data["topiccount"] >> topiccount;
+	data.TryLoad("topiccount", topiccount);
 	st->topic_requests.clear();
 	for (uint64_t idx = 0; idx < topiccount; ++idx)
 	{
 		const Anope::string prefix = "topic" + Anope::ToString(idx) + ".";
 		Anope::string topic;
 		uint64_t count = 0;
-		data[prefix + "name"] >> topic;
-		data[prefix + "count"] >> count;
+		data.TryLoad(prefix + "name", topic);
+		data.TryLoad(prefix + "count", count);
 		if (!topic.empty())
 			st->topic_requests[topic] = count;
 	}
 
 	uint64_t hc = 0;
-	data["helpme_cooldown_count"] >> hc;
+	data.TryLoad("helpme_cooldown_count", hc);
 	st->last_helpme_by_key.clear();
 	for (uint64_t idx = 0; idx < hc; ++idx)
 	{
 		const Anope::string prefix = "helpme_cooldown" + Anope::ToString(idx) + ".";
 		Anope::string k;
 		time_t ts = 0;
-		data[prefix + "key"] >> k;
-		data[prefix + "ts"] >> ts;
+		data.TryLoad(prefix + "key", k);
+		data.TryLoad(prefix + "ts", ts);
 		if (!k.empty() && ts > 0)
 			st->last_helpme_by_key[k] = ts;
 	}
 
 	uint64_t rc = 0;
-	data["request_cooldown_count"] >> rc;
+	data.TryLoad("request_cooldown_count", rc);
 	st->last_request_by_key.clear();
 	for (uint64_t idx = 0; idx < rc; ++idx)
 	{
 		const Anope::string prefix = "request_cooldown" + Anope::ToString(idx) + ".";
 		Anope::string k;
 		time_t ts = 0;
-		data[prefix + "key"] >> k;
-		data[prefix + "ts"] >> ts;
+		data.TryLoad(prefix + "key", k);
+		data.TryLoad(prefix + "ts", ts);
 		if (!k.empty() && ts > 0)
 			st->last_request_by_key[k] = ts;
 	}
@@ -872,19 +872,20 @@ class HelpServCore::HelpServDeferredSaveTimer final
 
 public:
 	HelpServDeferredSaveTimer(HelpServCore& owner, time_t seconds)
-		: Timer(&owner, seconds, true)
+		: Timer(&owner, seconds)
 		, hs(owner)
 	{
 	}
 
-	void Tick() override
+	bool Tick() override
 	{
 		if (!this->hs.db_save_pending)
-			return;
+			return true;
 		if (!Me || !Me->IsSynced())
-			return;
+			return true;
 		this->hs.db_save_pending = false;
 		Anope::SaveDatabases();
+		return true;
 	}
 };
 

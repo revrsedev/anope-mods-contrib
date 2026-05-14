@@ -2634,12 +2634,12 @@ class DiceServUpgradeTimer : public Timer
 	Anope::string diceservdb;
 
 public:
-	DiceServUpgradeTimer(Module *creator, time_t timeout, bool dorepeat, const Anope::string &db) : Timer(creator, timeout, dorepeat),
+	DiceServUpgradeTimer(Module *creator, time_t timeout, const Anope::string &db) : Timer(creator, timeout),
 		diceservdb(db)
 	{
 	}
 
-	void Tick() override;
+	bool Tick() override;
 };
 
 /** DiceServ's core module, provides the interface for other modules to be able to use the roller.
@@ -2675,9 +2675,9 @@ public:
 				oldDatabase.close();
 
 				if (Me->IsSynced())
-					new DiceServUpgradeTimer(this, 0, false, diceservdb);
+					new DiceServUpgradeTimer(this, 0, diceservdb);
 				else
-					new DiceServUpgradeTimer(this, 1, true, diceservdb);
+					new DiceServUpgradeTimer(this, 1, diceservdb);
 			}
 		}
 	}
@@ -3014,7 +3014,7 @@ public:
 	}
 };
 
-void DiceServUpgradeTimer::Tick()
+bool DiceServUpgradeTimer::Tick()
 {
 	if (Me->IsSynced())
 	{
@@ -3057,8 +3057,7 @@ void DiceServUpgradeTimer::Tick()
 
 		Log(DiceServ) << "Loaded old database, it has been deleted and ignore data will now be stored as metadata in main database. Please comment out the diceservdb directive in the diceserv module configuration block.";
 
-		if (this->GetRepeat())
-			delete this;
+		return false;
 	}
 }
 

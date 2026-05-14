@@ -51,14 +51,14 @@ struct ChanTrapInfo : Serializable
 
 	void Serialize(Serialize::Data &data) const
 	{
-		data["mask"] << this->mask;
-		data["modes"] << this->modes;
-		data["bots"] << this->bots;
-		data["action"] << this->action;
-		data["duration"] << this->duration;
-		data["creator"] << this->creator;
-		data["reason"] << this->reason;
-		data["created"] << this->created;
+		data.Store("mask", this->mask);
+		data.Store("modes", this->modes);
+		data.Store("bots", this->bots);
+		data.Store("action", this->action);
+		data.Store("duration", this->duration);
+		data.Store("creator", this->creator);
+		data.Store("reason", this->reason);
+		data.Store("created", this->created);
 	}
 
 	static Serializable* Unserialize(Serializable *obj, Serialize::Data &data);
@@ -317,15 +317,15 @@ Serializable* ChanTrapInfo::Unserialize(Serializable *obj, Serialize::Data &data
 	else
 		ct = new ChanTrapInfo;
 
-	data["mask"] >> ct->mask;
-	data["modes"] >> ct->modes;
-	data["bots"] >> ct->bots;
-	data["duration"] >> ct->duration;
-	data["creator"] >> ct->creator;
-	data["reason"] >> ct->reason;
-	data["created"] >> ct->created;
-	unsigned int a;
-	data["action"] >> a;
+	data.TryLoad("mask", ct->mask);
+	data.TryLoad("modes", ct->modes);
+	data.TryLoad("bots", ct->bots);
+	data.TryLoad("duration", ct->duration);
+	data.TryLoad("creator", ct->creator);
+	data.TryLoad("reason", ct->reason);
+	data.TryLoad("created", ct->created);
+	unsigned int a = 0;
+	data.TryLoad("action", a);
 	ct->action = static_cast<ChanTrapAction>(a);
 
 	if (a > CTA_SIZE)
@@ -1022,14 +1022,14 @@ struct ChanTrapInfoType final
 	{
 		const auto *ct = static_cast<const ChanTrapInfo *>(obj);
 
-		data["mask"] << ct->mask;
-		data["modes"] << ct->modes;
-		data["bots"] << ct->bots;
-		data["action"] << ct->action;
-		data["duration"] << ct->duration;
-		data["creator"] << ct->creator;
-		data["reason"] << ct->reason;
-		data["created"] << ct->created;
+		data.Store("mask", ct->mask);
+		data.Store("modes", ct->modes);
+		data.Store("bots", ct->bots);
+		data.Store("action", ct->action);
+		data.Store("duration", ct->duration);
+		data.Store("creator", ct->creator);
+		data.Store("reason", ct->reason);
+		data.Store("created", ct->created);
 	}
 
 	Serializable *Unserialize(Serializable *obj, Serialize::Data &data) const override

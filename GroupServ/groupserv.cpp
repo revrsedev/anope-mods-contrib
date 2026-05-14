@@ -191,9 +191,9 @@ namespace
 		Serializable* Unserialize(Serializable* obj, Serialize::Data& data) const override
 		{
 			Anope::string sci, sgroup, sonly;
-			data["ci"] >> sci;
-			data["group"] >> sgroup;
-			data["group_only"] >> sonly;
+			data.TryLoad("ci", sci);
+			data.TryLoad("group", sgroup);
+			data.TryLoad("group_only", sonly);
 
 			ChannelInfo* ci = ChannelInfo::Find(sci);
 			if (!ci)
@@ -606,7 +606,7 @@ class CommandGroupServVHost final
 
 		BotInfo* bi = nullptr;
 		Anope::string cmdname;
-		if (!Command::FindCommandFromService("hostserv/request", bi, cmdname) || !bi)
+		if (!Command::FindFromService("hostserv/request", bi, cmdname) || !bi)
 		{
 			this->gs.Reply(source, "HostServ is not available.");
 			return false;
@@ -1059,14 +1059,15 @@ class GroupServTimer final
 
 public:
 	GroupServTimer(Module* owner, GroupServCore& core, time_t seconds)
-		: Timer(owner, seconds, true)
+		: Timer(owner, seconds)
 		, gs(core)
 	{
 	}
 
-	void Tick() override
+	bool Tick() override
 	{
 		this->gs.SaveDB();
+		return true;
 	}
 };
 

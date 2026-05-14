@@ -117,7 +117,7 @@ void ChanFixChannelDataType::Serialize(Serializable* obj, Serialize::Data& data)
 Serializable* ChanFixChannelDataType::Unserialize(Serializable* obj, Serialize::Data& data) const
 {
 	Anope::string name;
-	data["name"] >> name;
+	data.TryLoad("name", name);
 	if (name.empty())
 		return nullptr;
 
@@ -137,36 +137,36 @@ Serializable* ChanFixChannelDataType::Unserialize(Serializable* obj, Serialize::
 			rec = new CFChannelData(name);
 	}
 
-	data["ts"] >> rec->ts;
-	data["lastupdate"] >> rec->lastupdate;
-	data["fix_started"] >> rec->fix_started;
-	data["fix_requested"] >> rec->fix_requested;
+	data.TryLoad("ts", rec->ts);
+	data.TryLoad("lastupdate", rec->lastupdate);
+	data.TryLoad("fix_started", rec->fix_started);
+	data.TryLoad("fix_requested", rec->fix_requested);
 
-	data["marked"] >> rec->marked;
-	data["mark_setter"] >> rec->mark_setter;
-	data["mark_time"] >> rec->mark_time;
-	data["mark_reason"] >> rec->mark_reason;
+	data.TryLoad("marked", rec->marked);
+	data.TryLoad("mark_setter", rec->mark_setter);
+	data.TryLoad("mark_time", rec->mark_time);
+	data.TryLoad("mark_reason", rec->mark_reason);
 
-	data["nofix"] >> rec->nofix;
-	data["nofix_setter"] >> rec->nofix_setter;
-	data["nofix_time"] >> rec->nofix_time;
-	data["nofix_reason"] >> rec->nofix_reason;
+	data.TryLoad("nofix", rec->nofix);
+	data.TryLoad("nofix_setter", rec->nofix_setter);
+	data.TryLoad("nofix_time", rec->nofix_time);
+	data.TryLoad("nofix_reason", rec->nofix_reason);
 
 	uint64_t opcount = 0;
-	data["opcount"] >> opcount;
+	data.TryLoad("opcount", opcount);
 	rec->oprecords.clear();
 	for (uint64_t i = 0; i < opcount; ++i)
 	{
 		const Anope::string prefix = "op" + Anope::ToString(i) + ".";
 		Anope::string key;
 		CFOpRecord o;
-		data[prefix + "key"] >> key;
-		data[prefix + "account"] >> o.account;
-		data[prefix + "user"] >> o.user;
-		data[prefix + "host"] >> o.host;
-		data[prefix + "firstseen"] >> o.firstseen;
-		data[prefix + "lastevent"] >> o.lastevent;
-		data[prefix + "age"] >> o.age;
+data.TryLoad(prefix + "key", key);
+                data.TryLoad(prefix + "account", o.account);
+                data.TryLoad(prefix + "user", o.user);
+                data.TryLoad(prefix + "host", o.host);
+                data.TryLoad(prefix + "firstseen", o.firstseen);
+                data.TryLoad(prefix + "lastevent", o.lastevent);
+                data.TryLoad(prefix + "age", o.age);
 
 		if (key.empty())
 		{
@@ -200,24 +200,25 @@ class ChanFixCore::DeferredSaveTimer final
 
 public:
 	DeferredSaveTimer(Module* owner, ChanFixCore& core, time_t seconds)
-		: Timer(owner, seconds, true)
+		: Timer(owner, seconds)
 		, cf(core)
 	{
 	}
 
-	void Tick() override
-	{
-		// Nothing queued.
-		if (!this->cf.LegacyImportNeedsSave() && !this->cf.db_save_pending)
-			return;
+bool Tick() override
+        {
+                // Nothing queued.
+                if (!this->cf.LegacyImportNeedsSave() && !this->cf.db_save_pending)
+                        return true;
 
 		// Avoid writing while not fully synced.
 		if (!Me || !Me->IsSynced())
-			return;
+			return true;
 
 		this->cf.db_save_pending = false;
 		this->cf.ClearLegacyImportNeedsSave();
 		Anope::SaveDatabases();
+		return true;
 	}
 };
 
@@ -417,7 +418,7 @@ unsigned int ChanFixCore::CountOps(Channel* c) const
 	{
 		if (!u || !cuc)
 			continue;
-		if (cuc->status.HasMode(this->op_status_char))
+		if (cuc->status.HasMode(ModeManager::FindChannelModeByChar(this->op_status_char)))
 			++n;
 	}
 	return n;
@@ -577,7 +578,7 @@ bool ChanFixCore::CanStartFix(const CFChannelData& rec, Channel* c) const
 	{
 		if (!u || !cuc || u == this->chanfix)
 			continue;
-		if (cuc->status.HasMode(this->op_status_char))
+		if (cuc->status.HasMode(ModeManager::FindChannelModeByChar(this->op_status_char)))
 			continue;
 
 		const CFOpRecord* orec = nullptr;
@@ -611,7 +612,7 @@ bool ChanFixCore::FixChannel(CFChannelData& rec, Channel* c)
 		if (!u || !cuc || u == this->chanfix)
 			continue;
 
-		const bool is_opped = cuc->status.HasMode(this->op_status_char);
+		const bool is_opped = cuc->status.HasMode(ModeManager::FindChannelModeByChar(this->op_status_char));
 		unsigned int score = 0;
 		if (auto it = rec.oprecords.find(this->KeyForUser(u)); it != rec.oprecords.end())
 			score = this->CalculateScore(it->second);
@@ -823,7 +824,7 @@ void ChanFixCore::GatherTick()
 		{
 			if (!u || !cuc)
 				continue;
-			if (!cuc->status.HasMode(this->op_status_char))
+			if (!cuc->status.HasMode(ModeManager::FindChannelModeByChar(this->op_status_char)))
 				continue;
 			dirty |= this->UpdateOpRecord(rec, u);
 		}
@@ -1026,8 +1027,8 @@ bool ChanFixCore::RequestFixFromChanServ(CommandSource& source, const Anope::str
 			return false;
 		}
 
-		ChanUserContainer* cuc = c->FindUser(u);
-		if (!cuc || !cuc->status.HasMode(this->op_status_char))
+		Membership* cuc = c->FindUser(u);
+		if (!cuc || !cuc->status.HasMode(ModeManager::FindChannelModeByChar(this->op_status_char)))
 		{
 			source.Reply(ACCESS_DENIED);
 			return false;

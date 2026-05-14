@@ -54,12 +54,12 @@ struct NotifyEntry : Serializable
 
 	void Serialize(Serialize::Data &data) const
 	{
-		data["mask"] << this->mask;
-		data["reason"] << this->reason;
-		data["flags"] << Anope::string(this->flags.begin(), this->flags.end());
-		data["creator"] << this->creator;
-		data["created"] << this->created;
-		data["expires"] << this->expires;
+		data.Store("mask", this->mask);
+		data.Store("reason", this->reason);
+		data.Store("flags", Anope::string(this->flags.begin(), this->flags.end()));
+		data.Store("creator", this->creator);
+		data.Store("created", this->created);
+		data.Store("expires", this->expires);
 	}
 
 	static Serializable* Unserialize(Serializable *obj, Serialize::Data &data);
@@ -281,12 +281,12 @@ Serializable* NotifyEntry::Unserialize(Serializable *obj, Serialize::Data &data)
 		ne = new NotifyEntry();
 
 	Anope::string flags;
-	data["mask"] >> ne->mask;
-	data["reason"] >> ne->reason;
-	data["flags"] >> flags;
-	data["creator"] >> ne->creator;
-	data["created"] >> ne->created;
-	data["expires"] >> ne->expires;
+	data.TryLoad("mask", ne->mask);
+	data.TryLoad("reason", ne->reason);
+	data.TryLoad("flags", flags);
+	data.TryLoad("creator", ne->creator);
+	data.TryLoad("created", ne->created);
+	data.TryLoad("expires", ne->expires);
 	for (unsigned f = 0; f != flags.length(); ++f)
 		ne->flags.insert(flags[f]);
 

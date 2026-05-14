@@ -236,7 +236,7 @@ public:
 		LoadConfig(conf.GetModule(this));
 	}
 
-	void OnAccessAdd(ChannelInfo *ci, CommandSource &source, ChanAccess *access) override
+	void OnAccessAdd(ChannelInfo *ci, CommandSource &source, ChanAccess *access, bool migrated) override
 	{
 		if (!ci || !access)
 			return;
@@ -274,7 +274,7 @@ public:
 		}
 	}
 
-	void OnAccessDel(ChannelInfo *ci, CommandSource &source, ChanAccess *access) override
+	void OnAccessDel(ChannelInfo *ci, CommandSource &source, ChanAccess *access, bool migrated) override
 	{
 		if (!ci || !access)
 			return;

@@ -36,7 +36,7 @@ class CSAkickCheck : public Module
 			Channel *c = chan->second;
 			for (Channel::ChanUserList::iterator it = c->users.begin(), it_end = c->users.end(); it != it_end; )
 			{
-				ChanUserContainer *uc = it->second;
+				Membership *uc = it->second;
 				++it;
 
 				c->CheckKick(uc->user);
@@ -48,7 +48,7 @@ class CSAkickCheck : public Module
 	{
 		for (User::ChanUserList::iterator it = u->chans.begin(), it_end = u->chans.end(); it != it_end; )
 		{
-			ChanUserContainer *cc = it->second;
+			Membership *cc = it->second;
 			++it;
 
 			Channel *c = cc->chan;

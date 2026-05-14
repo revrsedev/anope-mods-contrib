@@ -15,6 +15,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+/// $LinkerFlags: -libcurl -lcrypto -lssl -lcurl
+
 #include "module.h"
 #include <map>
 #include <ctime>
@@ -127,6 +129,19 @@ public:
 		}
 	}
 
+	// Bridge base-class hooks (with User*/Module* args) to our parameterless versions
+	void OnModuleLoad(User *u, Module *m) override
+	{
+		Module::OnModuleLoad(u, m);
+		OnModuleLoad();
+	}
+
+	void OnModuleUnload(User *u, Module *m) override
+	{
+		OnModuleUnload();
+		Module::OnModuleUnload(u, m);
+	}
+
 	void CreateBot()
 	{
 		if (secureBot)
@@ -141,8 +156,8 @@ public:
 		}
 		// Make the bot join the log channel if configured
 		if (!log_channel_name.empty()) {
-			bool created = false;
-			Channel *logchan = Channel::FindOrCreate(log_channel_name, created);
+			bool chan_created = false;
+			Channel *logchan = Channel::FindOrCreate(log_channel_name, chan_created);
 			if (logchan && !logchan->FindUser(secureBot)) {
 				secureBot->Join(logchan); // Join as a service bot
 				Log(LOG_NORMAL, "m_secure") << "SeCuRe joined log channel: " << log_channel_name;
@@ -201,7 +216,7 @@ public:
 		if (user->server && whitelisted_servers.count(servername))
 			return;
 		// Wildcard check
-		if (!wildcard_server.empty() && wildcard_server[0] == '*' && wildcard_server[1] == '.') {
+		if (wildcard_server.size() > 1 && wildcard_server[0] == '*' && wildcard_server[1] == '.') {
 			std::string suffix = wildcard_server.substr(1); // e.g. ".uin"
 			if (servername.length() >= suffix.length() && servername.compare(servername.length() - suffix.length(), suffix.length(), suffix) == 0)
 				return;
@@ -219,8 +234,8 @@ public:
 				Channel *logchan = Channel::Find(log_channel_name);
 				if (logchan && logchan->FindUser(secureBot)) {
 					MessageSource src(secureBot);
-					Anope::string msg = Anope::printf("Killed proxy user: %s [%s]", user->nick.c_str(), ip.c_str());
-					IRCD->SendPrivmsg(src, logchan->name, msg);
+					Anope::string msg = "Killed proxy user: " + user->nick + " [" + Anope::string(ip.c_str()) + "]";
+					IRCD->SendPrivmsg(src, logchan->name, msg.c_str());
 				}
 			}
 		}
